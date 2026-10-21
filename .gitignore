@@ -1,0 +1,20 @@
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local model files (download separately from HuggingFace — never commit)
+*.hfq
+*.mq4-xts
+*.mtp
+
+# Temp scan scripts
+_scan.ps1
+_scan.py
+_inspect.ps1

@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: hipfire-windows <hipfire-windows@example.com>
+Date: Wed, 21 Oct 2026 14:01:00 +0800
+Subject: [PATCH 2/2] rdna-compute: skip /proc/meminfo on Windows UMA path
+
+On UMA APUs (e.g. Strix Halo gfx1151), device_mem_info queries
+/proc/meminfo (MemAvailable) to estimate host RAM available for GTT
+allocations. This is a Linux-only path that returns None on Windows,
+causing the UMA free-memory query to fail spuriously.
+
+Add a #[cfg(windows)] early return that trusts hipMemGetInfo's free
+value directly. On Windows, hipMemGetInfo already reports the UMA
+carve-out free bytes correctly, so the Linux host-available adjustment
+is unnecessary and unavailable.
+
+Signed-off-by: hipfire-windows <hipfire-windows@example.com>
+---
+ crates/rdna-compute/src/dispatch.rs | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/crates/rdna-compute/src/dispatch.rs b/crates/rdna-compute/src/dispatch.rs
+index b568930..a7ee254 100644
+--- a/crates/rdna-compute/src/dispatch.rs
++++ b/crates/rdna-compute/src/dispatch.rs
+@@ -1559,6 +1559,15 @@ impl Gpu {
+         if !self.is_uma() {
+             return Ok((free, total));
+         }
++        // Windows: `hipMemGetInfo` already reports the UMA carve-out free bytes
++        // correctly. The Linux host-available adjustment
++        // (`uma_memory::device_free_from` via `/proc/meminfo` MemAvailable)
++        // is unavailable on Windows and would spuriously return None, so skip
++        // it and trust the HIP-reported free value directly.
++        #[cfg(windows)]
++        {
++            return Ok((free, total));
++        }
+         use crate::uma_memory;
+         let carveout_total = self
+             .hip
+-- 
+2.45.0

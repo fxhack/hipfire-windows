@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: hipfire-windows <hipfire-windows@example.com>
+Date: Wed, 21 Oct 2026 14:00:00 +0800
+Subject: [PATCH 1/2] config: add HIPFIRE_UNSAFE_WINDOWS_VMM_KV override knob
+
+Add a process-level environment variable that lifts the VMM KV backend
+refusal on native Windows. The Windows VMM segment-aliasing bug is
+already fixed in rdna-compute::dispatch (full-reservation map up front
+instead of growth), so grow_vmm_tensor is a no-op. This knob exists for
+users who need long context (256K) on Windows and accept the up-front
+VRAM reservation cost.
+
+Signed-off-by: hipfire-windows <hipfire-windows@example.com>
+---
+ crates/hipfire-config/src/devices.rs | 30 +++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/crates/hipfire-config/src/devices.rs b/crates/hipfire-config/src/devices.rs
+index ef05697..1fd9690 100644
+--- a/crates/hipfire-config/src/devices.rs
++++ b/crates/hipfire-config/src/devices.rs
+@@ -112,6 +112,14 @@ impl UncertifiedPlatform {
+ pub const UNSAFE_WSL_REDLINE: &str = "HIPFIRE_UNSAFE_WSL_REDLINE";
+ /// Process knob that admits VMM KV under WSL/ROCDXG; unsafe until certified.
+ pub const UNSAFE_WSL_VMM_KV: &str = "HIPFIRE_UNSAFE_WSL_VMM_KV";
++/// Process knob that admits VMM KV under Native Windows; unsafe until certified.
++///
++/// The Windows VMM segment-aliasing bug is fixed in `rdna-compute::dispatch`
++/// (2026-09-09 WINDOWS FIX: full-reservation map up front instead of growth,
++/// so `grow_vmm_tensor` is a no-op). The cost is up-front VRAM for the whole
++/// reservation. This knob exists for users who need long context on Windows
++/// and accept the OOM risk if the reservation exceeds available VRAM.
++pub const UNSAFE_WINDOWS_VMM_KV: &str = "HIPFIRE_UNSAFE_WINDOWS_VMM_KV";
+ 
+ /// Why Redline PM4 (retained default or explicit backend) is refused on
+ /// `platform`, or `None` when it may run. Native Windows has no ROCr, so no
+@@ -129,10 +137,18 @@ pub fn redline_refusal(platform: Option<UncertifiedPlatform>, unsafe_override: b
+ }
+ 
+ /// Why the VMM KV backend is refused on `platform`, or `None` when allowed.
++///
++/// `unsafe_override` is `true` when either `HIPFIRE_UNSAFE_WSL_VMM_KV` or
++/// `HIPFIRE_UNSAFE_WINDOWS_VMM_KV` is set, lifting the refusal for uncertified
++/// platforms. The Windows override is only meaningful because `rdna-compute`
++/// ships the 2026-09-09 WINDOWS FIX (full-reservation map, no growth), which
++/// makes VMM growth a no-op on Windows -- correctness at the cost of up-front
++/// VRAM for the entire reservation.
+ pub fn vmm_kv_refusal(platform: Option<UncertifiedPlatform>, unsafe_override: bool) -> Option<String> {
+     match platform? {
++        UncertifiedPlatform::NativeWindows if unsafe_override => None,
+         UncertifiedPlatform::NativeWindows => {
+-            Some("Windows VMM mapping/graph semantics are not certified".into())
++            Some("Windows VMM mapping/graph semantics are not certified; set HIPFIRE_UNSAFE_WINDOWS_VMM_KV=1 to override (rdna-compute ships the segment-aliasing fix, but the reservation is mapped fully up front and may OOM)".into())
+         }
+         UncertifiedPlatform::WslDxg if unsafe_override => None,
+         UncertifiedPlatform::WslDxg => Some(format!(
+@@ -151,8 +167,14 @@ pub fn redline_platform_refusal() -> Option<String> {
+ }
+ 
+ /// [`vmm_kv_refusal`] for this host and process configuration.
++///
++/// Either `HIPFIRE_UNSAFE_WSL_VMM_KV` (WSL) or `HIPFIRE_UNSAFE_WINDOWS_VMM_KV`
++/// (Native Windows) lifts the refusal; the caller passes them OR-ed.
+ pub fn vmm_kv_platform_refusal() -> Option<String> {
+-    vmm_kv_refusal(UncertifiedPlatform::detect(), process_flag(UNSAFE_WSL_VMM_KV))
++    vmm_kv_refusal(
++        UncertifiedPlatform::detect(),
++        process_flag(UNSAFE_WSL_VMM_KV) || process_flag(UNSAFE_WINDOWS_VMM_KV),
++    )
+ }
+ 
+ const KEY: &str = "hardware.devices";
+-- 
+2.45.0

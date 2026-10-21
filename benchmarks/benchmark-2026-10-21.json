@@ -1,0 +1,126 @@
+{
+  "benchmark_metadata": {
+    "date": "2026-10-21T13:15:00+08:00",
+    "hardware": {
+      "cpu": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+      "gpu": "Radeon 8060S (gfx1151, 40 CU / 2560 SP, integrated)",
+      "memory": "128GB LPDDR5X-8000 (unified, ~256 GB/s)",
+      "os": "Windows 11 IoT LTSC 2024"
+    },
+    "software": {
+      "engine": "hipfire (Windows native build, patched)",
+      "model": "Qwen3.8-27B mq4-xts (4.46 bpw, 15.0 GB)",
+      "quantization": "MagnumQuant MQ4V2-xts with AWQ activation scales",
+      "kv_backend": "VMM (full-reservation map, 256K context)",
+      "speculation": "DFlash (MQ4V2 drafter, tau=3.43)",
+      "vision": "qwen3.8-27b-vision.hfq (928 MB, enabled)",
+      "mtp": "qwen3.8-27b.mtp (226 MB, auto)",
+      "rocm_version": "7.2 (HIP 7.2.60201, hipcc 21.0)"
+    },
+    "patches_applied": [
+      "0001-vmm-kv-windows-override.patch",
+      "0002-windows-uma-meminfo-fix.patch"
+    ],
+    "test_config": {
+      "concurrency": 1,
+      "temperature": 0.0,
+      "repeats": 3,
+      "total_requests": 21,
+      "success_rate": "100%"
+    }
+  },
+  "prefill_results": [
+    {
+      "context_length": "8k",
+      "actual_tokens": 7991,
+      "ttft_mean_s": 8.14,
+      "ttft_p90_s": 8.17,
+      "speed_tok_s": 982.1,
+      "ms_per_token": 1.018
+    },
+    {
+      "context_length": "32k",
+      "actual_tokens": 31774,
+      "ttft_mean_s": 36.02,
+      "ttft_p90_s": 36.35,
+      "speed_tok_s": 882.1,
+      "ms_per_token": 1.134
+    },
+    {
+      "context_length": "128k",
+      "actual_tokens": 126975,
+      "ttft_mean_s": 252.07,
+      "ttft_p90_s": 252.43,
+      "speed_tok_s": 503.7,
+      "ms_per_token": 1.985
+    }
+  ],
+  "decode_results": [
+    {
+      "gen_length": 16,
+      "speed_mean_tok_s": 29.5,
+      "speed_peak_tok_s": 36.1,
+      "speed_median_tok_s": 27.7,
+      "itl_mean_ms": 33.8,
+      "itl_p90_ms": 102.1,
+      "ttft_ms": 448,
+      "wall_time_mean_s": 0.97
+    },
+    {
+      "gen_length": 64,
+      "speed_mean_tok_s": 47.7,
+      "speed_peak_tok_s": 54.8,
+      "speed_median_tok_s": 47.2,
+      "itl_mean_ms": 21.0,
+      "itl_p90_ms": 101.8,
+      "ttft_ms": 427,
+      "wall_time_mean_s": 1.77
+    },
+    {
+      "gen_length": 128,
+      "speed_mean_tok_s": 54.3,
+      "speed_peak_tok_s": 58.7,
+      "speed_median_tok_s": 56.4,
+      "itl_mean_ms": 18.5,
+      "itl_p90_ms": 101.7,
+      "ttft_ms": 442,
+      "wall_time_mean_s": 2.80
+    },
+    {
+      "gen_length": 256,
+      "speed_mean_tok_s": 46.8,
+      "speed_peak_tok_s": 53.1,
+      "speed_median_tok_s": 48.9,
+      "itl_mean_ms": 21.8,
+      "itl_p90_ms": 101.7,
+      "ttft_ms": 444,
+      "wall_time_mean_s": 5.99
+    }
+  ],
+  "community_comparison": {
+    "prefill_8k": {
+      "this_work": 982.1,
+      "best_alternative": 440,
+      "best_source": "SteelPh0enix/llama.cpp-qwen4exp (Vulkan fork, Q4_K)",
+      "speedup_vs_best": "2.2x"
+    },
+    "prefill_32k": {
+      "this_work": 882.1,
+      "best_alternative": 252,
+      "best_source": "llama.cpp Vulkan (Q5_K_XL, toutiao)",
+      "speedup_vs_best": "3.5x"
+    },
+    "prefill_128k": {
+      "this_work": 503.7,
+      "best_alternative": 115,
+      "best_source": "llama.cpp ROCm (Q8_0, d9bl.cn)",
+      "speedup_vs_best": "4.4x"
+    },
+    "decode_best": {
+      "this_work": 54.3,
+      "best_alternative": 31.8,
+      "best_source": "llama.cpp Vulkan MTP n-max=5 (toutiao)",
+      "speedup_vs_best": "1.7x"
+    }
+  }
+}

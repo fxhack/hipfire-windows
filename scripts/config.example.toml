@@ -1,0 +1,24 @@
+schema_version = 1
+
+[developer]
+dflash_draft = "D:/ai/hipfire/models/qwen3.8-27b/qwen38-27b-dflash-mq4.hfq"
+
+[generation]
+max_tokens = 393216
+temperature = 1.0
+top_k = 20
+top_p = 0.95
+
+[memory]
+max_seq = 262144
+
+[reasoning]
+effort = "medium"
+
+[serve]
+default_model = "D:/ai/hipfire/models/qwen3.8-27b/qwen3.8-27b.mq4-xts"
+
+[speculation]
+mode = "auto"
+dflash = "auto"
+mtp = "auto"
