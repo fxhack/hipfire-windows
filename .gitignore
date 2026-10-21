@@ -14,7 +14,12 @@ desktop.ini
 *.mq4-xts
 *.mtp
 
-# Temp scan scripts
-_scan.ps1
-_scan.py
-_inspect.ps1
+# Compiled binaries (distributed as GitHub Releases, not in git)
+*.exe
+
+# Douyin video production workspace (media assets, not part of the software)
+video/
+
+# Local temp scripts
+_*.ps1
+_*.py
