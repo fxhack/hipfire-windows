@@ -1,23 +1,44 @@
+# hipfire config — Strix Halo gfx1151 + Qwen3.8-27B
+#
+# Copy this file to <HIPFIRE_HOME>/config.toml and edit paths to match
+# your installation.  When HIPFIRE_HOME is set (as the .bat scripts do),
+# hipfire reads this file from that directory.
+#
+# On Windows the model paths must use forward slashes or double backslashes.
+
 schema_version = 1
 
+# --- DFlash speculative-decoding drafter sidecar ---
 [developer]
-dflash_draft = "D:/ai/hipfire/models/qwen3.8-27b/qwen38-27b-dflash-mq4.hfq"
+dflash_draft = "<HIPFIRE_HOME>/models/qwen3.8-27b/qwen38-27b-dflash-mq4.hfq"
 
+# --- Generation defaults (per-request overrides still apply) ---
 [generation]
-max_tokens = 393216
+max_tokens = 8192          # default response length cap; raise as needed
 temperature = 1.0
 top_k = 20
 top_p = 0.95
 
+# --- Memory / KV cache ---
 [memory]
-max_seq = 262144
+max_seq = 262144           # 256K context — requires VMM KV backend
+# Persist evicted session KV to disk so a re-visit restores instead of
+# cold-prefilling.  Budget is in bytes; 8 GiB is a good starting point.
+session_cache_disk_bytes = 8589934592
+session_cache_dir = "<HIPFIRE_HOME>/session-cache"
 
+# --- Reasoning ---
 [reasoning]
 effort = "medium"
 
+# --- Serve ---
 [serve]
-default_model = "D:/ai/hipfire/models/qwen3.8-27b/qwen3.8-27b.mq4-xts"
+default_model = "<HIPFIRE_HOME>/models/qwen3.8-27b/qwen3.8-27b.mq4-xts"
+# gfx1151 note: multi_slot and vmm_batch are NOT available (multi_slot needs
+# legacy KV backend, vmm_batch needs gfx1201).  Keep noslots sequential mode
+# and rely on session_cache_disk for evict -> restore.
 
+# --- Speculation ---
 [speculation]
 mode = "auto"
 dflash = "auto"
